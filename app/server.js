@@ -18,7 +18,7 @@ app.use(bodyParser.json({type: 'application/*+json'})) // for pasing application
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/x-www-form-urlencoded
 
 app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname, 'src/index.html'))
+  res.sendFile(path.join(__dirname, 'public/index.html'))
 })
 
 app.post('/wallet/create', function (req, res) {
@@ -29,4 +29,4 @@ app.post('/wallet/create', function (req, res) {
 
 app.listen(3000, function () {
   console.log('Toy App listening on port 3000')
-})
+});
