@@ -18,7 +18,7 @@ app.use(bodyParser.json({type: 'application/*+json'})) // for pasing application
 app.use(bodyParser.urlencoded({extended: true})); // for parsing application/x-www-form-urlencoded
 
 app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname, 'public/index.html'))
+  res.sendFile(path.join(__dirname, 'public/home.html'))
 })
 
 app.post('/wallet/create', function (req, res) {
