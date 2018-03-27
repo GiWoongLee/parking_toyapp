@@ -11,12 +11,8 @@ const Web3 = require('web3')
 if (typeof web3 != 'undefined') {
   var web3 = new Web3(Web3.currentProvider)
 } else {
-  var web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545'))
+  var web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545')) // NOTE : ganache-cli -p 8545 will open up port
 }
-
-// TODO : Remove fixtures data(only used in ganache)
-const sender = web3.eth.getAccounts().account[0]
-const receiver = web3.eth.getAccounts().account[1]
 
 app.use(express.static(__dirname + '/public'))
 app.use(bodyParser.json({type: 'application/*+json'})) // for pasing application/json
@@ -27,6 +23,8 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'views/home.html'))
 })
 
+
+// NOTE : Input(username,userLicensenumber,password) => Output(User Keystore)
 app.post('/account/create', function (req, res) {
   // TODO : Refactoring. Check whether promise is the best solution to handle async functions
   // TODO : Refactoring. Change JSON file keys because of the maintenance. Possibly declare JSON first.
@@ -94,59 +92,92 @@ app.post('/account/create', function (req, res) {
     })
 })
 
+//NOTE : Input(sender,receiver,amount) => Output()
 app.post('/payment', function (req, res) {
-  // STEP1 : find password of sender
-  const getSenderPassword = function () {
-    return new Promise(function (resolve, reject) {
-      db.User.findOne({where: {name: req.body.sender.name}})
-        .then(function (sender) { resolve(sender.password)})
-        .catch(function (error) {
-          console.log(error)
-          res.status(400).json({error: error})
-        })
+    // TODO : Remove fixtures data(only used in ganache)
+    web3.eth.getAccounts()
+    .then(function(accounts){
+      console.log(accounts)
+      return [accounts[0],accounts[1]] // sender and receiver
     })
-  }
-  // STEP2 : find address of receiver
-  const getReceiverAddress = function () {
-    return new Promise(function (resolve, reject) {
-      db.User.findOne({where: {name: req.body.receiver.name}})
-        .then(function (receiver) { resolve(receiver.address) })
-        .catch(function (err) {
-          console.log(err)
-          res.status(400).json({error: err})
-        })
-    })
-  }
+    // TODO : unlock account first and signAndSendTranscation
+    .then(function (accounts) {
+      var senderAddress = accounts[0]
+      web3.eth.
 
-  Promise.all([getSenderPassword(), getReceiverAddress()])
-    .then(function (data) {
-      // STEP3 : get account by decrypting keyStore with user password
-      var senderPassword = data[0]
-      return web3.eth.accounts.decrypt(req.body.sender.keyStore, senderPassword) // NOTE : get account from KeyStore
+      sender.signTransaction({
+        to: receiver.address,
+        value: req.body.amount
+      }, sender.privateKey)
+      .then(function (encodedTransaction) {
+        return web3.eth.accounts.sendSignedTransaction(encodedTransaction.rawTransaction)
+      })
+      .then(function (receipt) {
+        res.status(200).json({ result: 'success'})
+      })
+      .catch(function (error) {
+        console.log(error)
+        res.status(400).json({result: 'failure', error: error })
+      })
     })
-    .then(function(senderAccount){
-      return sender.signTransaction({
-        to : receiver.address,
-        gas : req.body,amount
-      },sender.privateKey)
+    .catch(function(error){
+      console.log(error)
     })
+    // STEP1 : find password of sender
+    // const getSenderPassword = function () {
+    //   return new Promise(function (resolve, reject) {
+    //     db.User.findOne({where: {name: req.body.sender.name}})
+    //       .then(function (sender) { resolve(sender.password)})
+    //       .catch(function (error) {
+    //         console.log(error)
+    //         res.status(400).json({error: error})
+    //       })
+    //   })
+    // }
+    // STEP2 : find address of receiver
+    // const getReceiverAddress = function () {
+    //   return new Promise(function (resolve, reject) {
+    //     db.User.findOne({where: {name: req.body.receiver.name}})
+    //       .then(function (receiver) { resolve(receiver.address) })
+    //       .catch(function (err) {
+    //         console.log(err)
+    //         res.status(400).json({error: err})
+    //       })
+    //   })
+    // }
+    // Promise.all([getSenderPassword(), getReceiverAddress()])
+    // .then(function (data) {
+    //   // STEP3 : get account by decrypting keyStore with user password
+    //   var senderPassword = data[0]
+    // // return web3.eth.accounts.decrypt(req.body.sender.keyStore, senderPassword) // NOTE : get account from KeyStore
+    // })
+    // STEP4 : unlock account   
+    // .then(function(senderAccount){return web3.eth.accounts.unlock(senderAccount)})
     // TODO : replace ganache-virtual sender account with real account on top of ethereum
+    // STEP5 : signTransaction and send ETH from sender to receiver
     // .then(function (senderAccount) {
-    //   // STEP4 : signTransaction and send ETH from sender to receiver
     //   return senderAccount.signTransaction({
     //     to: receiverAddress,
     //     gas: req.body.amount
     //   }, senderAccount.privateKey)
     // })
-    .then(function (data) {
-      // (TODO)STEP5 : save transaction data on db and response to client
-      res.status(200).json({ result: 'success'})
-    })
-    .catch(function (error) {
-      console.log(error)
-      res.status(400).json({result: 'failure', error: error })
-    })
+    // STEP6 : sendSignedTransaction
+    // .then(function (encodedTransaction) {
+    //     return web3
+    //       .eth
+    //       .accounts
+    //       .sendSignedTransaction(encodedTransaction.rawTransaction)
+    //   })
+    // .then(function (data) {
+    //   // (TODO)STEP7 : save transaction data on db and response to client
+    //   res.status(200).json({ result: 'success'})
+    // })
+    // .catch(function (error) {
+    //   console.log(error)
+    //   res.status(400).json({result: 'failure', error: error })
+    // })
 })
+
 
 app.listen(3000, function () {
   console.log('Toy App listening on port 3000')
