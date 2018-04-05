@@ -14,6 +14,18 @@ var registration = function () {
   })
 }
 
+// NOTE : encrypt PrivateKey
+var encryptPvKey = function (data) {
+  return new Promise(function (resolve, reject) {
+    var key = web3.eth.accounts.encrypt(data.ethAccountData.ethAccountPvKey, data.userData.userPwd)
+    resolve({'encryptedPvKey': key})
+  })
+}
+
+// NOTE : input9) => ouput(Promise:all)
+var showAllAccounts = function () {
+  return web3.eth.getAccounts()
+}
 
 // NOTE : input(privateKey) => output(Promise:account)
 var getAccount = function (privateKey) {
@@ -92,8 +104,10 @@ var payment = function (paymentInfo) { // TODO : Replace parameters with relevan
 }
 
 module.exports = {
-  registration : registration,
-  payment : payment
+  showAllAccounts: showAllAccounts,
+  encryptPvKey : encryptPvKey,
+  registration: registration,
+  payment: payment
 }
 
 // TODO : (Ethereum-hdkey/bip39)Test making new wallet and account for user in ganache

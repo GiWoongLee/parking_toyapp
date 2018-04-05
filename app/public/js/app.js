@@ -27,7 +27,7 @@ var register = function (user) {
       success: function (data) {
         console.log('Successful registration')
         console.log(data)
-        $('#keyStore').text(JSON.stringify(data.ethAccountPvKey))
+        $('#keyStore').text(JSON.stringify(data.encryptedPvKey))
       // TODO : Make a file to download EncryptedPrivateKey
       // TODO : We need to handle this issue - User might need to write EncryptedPrivateKey everytime
       },

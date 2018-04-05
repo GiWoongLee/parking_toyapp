@@ -3,7 +3,7 @@ const path = require('path')
 const bodyParser = require('body-parser')
 const app = express()
 const db = require('./models')
-const apis = require('./api.js')
+const blockchain = require('./blockchain.js')
 
 app.use(express.static(__dirname + '/public'))
 app.use(bodyParser.json({type: 'application/*+json'})) // for pasing application/json
@@ -17,24 +17,9 @@ app.get('/', function (req, res) {
 })
 
 app.post('/apis/account/create', function (req, res) {
-  apis.registration() // Promise returning created account address/pvKey
-    .then(function (account) {
-      res.status(200).json({ethAccountAddress: account.ethAccountAddress, ethAccountPvKey: account.ethAccountPvKey})
-    })
-    .catch(function (error) {
-      res.status(500).json({error: error, api: '/apis/account/create'})
-    })
-})
-
-// NOTE : Input(sender,receiver,amount) => Output()
-app.post('/apis/payment', function (req, res) {})
-
-// NOTE : Input(username,userLicensenumber,password) => Output(User Keystore)
-app.post('/account/create', function (req, res) {
-  // TODO : Refactoring. Check whether promise is the best solution to handle async functions
   // TODO : Refactoring. Change JSON file keys because of the maintenance. Possibly declare JSON first.
   var createUser = function () {
-    var newUser = new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
       db.User.create({name: req.body.username, licenseNumber: req.body.licenseNumber, password: req.body.password}) // TODO : Encrypt password with BCrypt
         .then(function (user) {
           resolve({userId: user.id, userPwd: user.password})
@@ -44,19 +29,10 @@ app.post('/account/create', function (req, res) {
           reject(Error(error))
         })
     })
-    return newUser
-  }
-
-  var createEthAccount = function () {
-    var newEthAccount = new Promise(function (resolve, reject) {
-      var ethAccount = web3.eth.accounts.create()
-      resolve({ethAccountAddress: ethAccount.address,ethAccountPvKey: ethAccount.privateKey})
-    })
-    return newEthAccount
   }
 
   var createAccount = function (data) {
-    var newAccount = new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
       db.Account.create({address: data.ethAccountData.ethAccountAddress, userId: data.userData.userId})
         .then(function (account) {
           resolve('success')
@@ -66,18 +42,9 @@ app.post('/account/create', function (req, res) {
           reject(Error(error))
         })
     })
-    return newAccount
   }
 
-  var encryptPrivateKey = function (data) {
-    var encryptedKey = new Promise(function (resolve, reject) {
-      var key = web3.eth.accounts.encrypt(data.ethAccountData.ethAccountPvKey, data.userData.userPwd)
-      resolve({'encryptedPrivateKey': key})
-    })
-    return encryptedKey
-  }
-
-  Promise.all([createUser(), createEthAccount()])
+  Promise.all([createUser(), blockchain.registration()])
     .then(function (data) {
       // NOTE : data as array containing newUser,newEthAccount data
       return {
@@ -86,15 +53,47 @@ app.post('/account/create', function (req, res) {
       }
     })
     .then(function (data) {
-      return Promise.all([createAccount(data), encryptPrivateKey(data)])
+      return Promise.all([createAccount(data), blockchain.encryptPvKey(data)])
     })
     .then(function (data) {
-      res.status(200).json({privateKey: data[1].encryptedPrivateKey}) // data as an array containing "",encryptedPrivateKey
+      res.status(200).json({encryptedPvKey: data[1].encryptedPvKey}) // data as an array containing "",encryptedPrivateKey
     })
     .catch(function (error) {
       console.log(error)
-      res.status(400).json({'error': error})
+      res.status(400).json({'error': error, api: '/apis/account/create'})
     })
+
+})
+
+// TODO : Remove fixture
+var paymentInfo = {
+  pvKeys: { // hardcoded private keys 
+    sender: '0x32d4e4b8deae4967f6ec305683921b1d46517767ef7a3411c27bbcf24fa7b757',
+    receiver: '0x90e40b307bd5ee5c7f5285aecffcf0fb223ff1cf802d913237ecaf2f962e251e'
+  },
+  txInfo: {
+    gasPrice: '200', // string
+    gas: '210000', // string
+    value: '1000', // string
+    data: '' // string
+  }
+}
+
+// NOTE : Input(sender,receiver,amount) => Output()
+app.post('/apis/payment', function (req, res) {})
+
+// NOTE : Input(username,userLicensenumber,password) => Output(User Keystore)
+app.post('/account/create', function (req, res) {
+  // TODO : Refactoring. Check whether promise is the best solution to handle async functions
+
+  // var createEthAccount = function () {
+  //   var newEthAccount = new Promise(function (resolve, reject) {
+  //     var ethAccount = web3.eth.accounts.create()
+  //     resolve({ethAccountAddress: ethAccount.address,ethAccountPvKey: ethAccount.privateKey})
+  //   })
+  //   return newEthAccount
+  // }
+
 })
 
 app.listen(3000, function () {
