@@ -71,20 +71,26 @@ var payment = function () {
   })
 }
 
+var showAllAccounts = function () {
+  $('#allAccounts').on('click', function (event) {
+    $.ajax({
+      method : 'GET',
+      url : 'apis/account/index',
+      success : function(msg){
+        console.log(msg.result)
+        console.log(msg.accounts)
+      },
+      error : function(msg){
+        console.log(msg.result)
+        console.log(msg.error)
+      }
+    })
+  })
+}
+
 // TODO : Refactoring. Need to come up with better solution than document.ready
 $(document).ready(function (e) {
   register(receiver)
   payment()
-  // $.ajax({
-  //   method : 'GET',
-  //   url : 'apis/account/index',
-  //   success : function(msg){
-  //     console.log(msg.result)
-  //     console.log(msg.accounts)
-  //   },
-  //   error : function(msg){
-  //     console.log(msg.result)
-  //     console.log(msg.error)
-  //   }
-  // })
+  showAllAccounts()
 })

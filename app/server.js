@@ -16,6 +16,16 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'views/home.html'))
 })
 
+app.get('/apis/account/index',function(req,res){
+  blockchain.showAllAccounts()
+  .then(function(accounts){
+    res.status(200).json({result: 'success', accounts : accounts})
+  })
+  .catch(function(error){
+    res.status(400).json({result: 'error', error: error})
+  })
+})
+
 app.post('/apis/account/create', function (req, res) {
   // TODO : Refactoring. Change JSON file keys because of the maintenance. Possibly declare JSON first.
   var createUser = function () {
