@@ -22,7 +22,7 @@ var encryptPvKey = function (data) {
   })
 }
 
-// NOTE : input9) => ouput(Promise:all)
+// NOTE : input() => ouput(Promise:all)
 var showAllAccounts = function () {
   return web3.eth.getAccounts()
 }
@@ -86,7 +86,7 @@ var transferEtherWithPvkey = function (sender, rawTx) {
 // }
 
 var payment = function (paymentInfo) { // TODO : Replace parameters with relevant params
-  Promise.all([getAccount(paymentInfo.pvKeys.sender), getAccount(paymentInfo.pvKeys.receiver)]) // STEP 1 : get accounts of sender/receiver
+  return Promise.all([getAccount(paymentInfo.pvKeys.sender), getAccount(paymentInfo.pvKeys.receiver)]) // STEP 1 : get accounts of sender/receiver
     .then(function (accounts) {
       var rawTx = {
         from: accounts[0].address, // sender
@@ -97,9 +97,14 @@ var payment = function (paymentInfo) { // TODO : Replace parameters with relevan
         data: paymentInfo.txInfo.data
       }
 
-      Promise.all(accounts.map(account => getBalance(account.address))) // STEP 2 : check balances of sender/receiver before transaction
+      return Promise.all(accounts.map(account => getBalance(account.address))) // STEP 2 : check balances of sender/receiver before transaction
         .then(() => transferEther(accounts[0], rawTx)) // STEP 3 : transferEther from sender to receiver
         .then(() => accounts.map(account => getBalance(account.address))) // STEP 4 : check balances of sender/receiver after transaction
+        .catch(function(error){console.log(error)})
+    })
+    .catch(function(error){
+      console.log(error)
+      return error
     })
 }
 

@@ -56,44 +56,23 @@ app.post('/apis/account/create', function (req, res) {
       return Promise.all([createAccount(data), blockchain.encryptPvKey(data)])
     })
     .then(function (data) {
-      res.status(200).json({encryptedPvKey: data[1].encryptedPvKey}) // data as an array containing "",encryptedPrivateKey
+      res.status(200).json({result:'success',encryptedPvKey: data[1].encryptedPvKey}) // data as an array containing "",encryptedPrivateKey
     })
     .catch(function (error) {
       console.log(error)
-      res.status(400).json({'error': error, api: '/apis/account/create'})
+      res.status(400).json({result:'error', error: error, api: '/apis/account/create'})
     })
-
 })
 
-// TODO : Remove fixture
-var paymentInfo = {
-  pvKeys: { // hardcoded private keys 
-    sender: '0x32d4e4b8deae4967f6ec305683921b1d46517767ef7a3411c27bbcf24fa7b757',
-    receiver: '0x90e40b307bd5ee5c7f5285aecffcf0fb223ff1cf802d913237ecaf2f962e251e'
-  },
-  txInfo: {
-    gasPrice: '200', // string
-    gas: '210000', // string
-    value: '1000', // string
-    data: '' // string
-  }
-}
-
 // NOTE : Input(sender,receiver,amount) => Output()
-app.post('/apis/payment', function (req, res) {})
-
-// NOTE : Input(username,userLicensenumber,password) => Output(User Keystore)
-app.post('/account/create', function (req, res) {
-  // TODO : Refactoring. Check whether promise is the best solution to handle async functions
-
-  // var createEthAccount = function () {
-  //   var newEthAccount = new Promise(function (resolve, reject) {
-  //     var ethAccount = web3.eth.accounts.create()
-  //     resolve({ethAccountAddress: ethAccount.address,ethAccountPvKey: ethAccount.privateKey})
-  //   })
-  //   return newEthAccount
-  // }
-
+app.post('/apis/payment', function (req, res) {
+  blockchain.payment(req.body.paymentInfo)
+    .then(function () {
+      res.status(200).json({result: 'success'})
+    })
+    .catch(function () {
+      res.status(400).json({result: 'error', error : error, api: '/apis/payment'})
+    })
 })
 
 app.listen(3000, function () {

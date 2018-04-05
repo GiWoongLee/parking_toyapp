@@ -1,3 +1,4 @@
+// TODO : Remove fixture
 var sender = {
   name: 'giwoong',
   licenseNumber: '2CJC569',
@@ -13,6 +14,19 @@ var receiver = {
 }
 
 var amount = '0.00042 ETH' // example: 21000 units of gas at 20 GWEI
+
+var paymentInfo = {
+  pvKeys: { // hardcoded private keys 
+    sender: '0x32d4e4b8deae4967f6ec305683921b1d46517767ef7a3411c27bbcf24fa7b757',
+    receiver: '0x90e40b307bd5ee5c7f5285aecffcf0fb223ff1cf802d913237ecaf2f962e251e'
+  },
+  txInfo: {
+    gasPrice: '200', // string
+    gas: '210000', // string
+    value: '1000', // string
+    data: '' // string
+  }
+}
 
 var register = function (user) {
   $('#registration').on('click', function (event) {
@@ -43,11 +57,9 @@ var payment = function () {
   $('#payment').on('click', function (event) {
     $.ajax({
       method: 'POST',
-      url: '/payment',
+      url: '/apis/payment',
       data: {
-        sender: sender,
-        receiver: receiver,
-        amount: amount
+        paymentInfo: paymentInfo
       },
       success: function (msg) {
         console.log(msg.result)
@@ -63,4 +75,16 @@ var payment = function () {
 $(document).ready(function (e) {
   register(receiver)
   payment()
+  // $.ajax({
+  //   method : 'GET',
+  //   url : 'apis/account/index',
+  //   success : function(msg){
+  //     console.log(msg.result)
+  //     console.log(msg.accounts)
+  //   },
+  //   error : function(msg){
+  //     console.log(msg.result)
+  //     console.log(msg.error)
+  //   }
+  // })
 })
