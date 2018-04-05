@@ -6,8 +6,14 @@ if (typeof web3 != 'undefined') {
   var web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545')) // NOTE : ganache-cli -p 8545 will open up port
 }
 
-// Test registering new account to ganache
-var registration = function () {}
+// NOTE : register account on ethereum network
+var registration = function () {
+  return new Promise(function (resolve, reject) {
+    var ethAccount = web3.eth.accounts.create()
+    resolve({ethAccountAddress: ethAccount.address,ethAccountPvKey: ethAccount.privateKey})
+  })
+}
+
 
 // NOTE : input(privateKey) => output(Promise:account)
 var getAccount = function (privateKey) {
@@ -67,20 +73,6 @@ var transferEtherWithPvkey = function (sender, rawTx) {
 //     })
 // }
 
-// TODO : Remove fixture
-var paymentInfo = {
-  pvKeys: { // hardcoded private keys 
-    sender: '0x32d4e4b8deae4967f6ec305683921b1d46517767ef7a3411c27bbcf24fa7b757',
-    receiver: '0x90e40b307bd5ee5c7f5285aecffcf0fb223ff1cf802d913237ecaf2f962e251e'
-  },
-  txInfo: {
-    gasPrice: '200', // string
-    gas: '210000', // string
-    value: '1000', // string
-    data: '' // string
-  }
-}
-
 var payment = function (paymentInfo) { // TODO : Replace parameters with relevant params
   Promise.all([getAccount(paymentInfo.pvKeys.sender), getAccount(paymentInfo.pvKeys.receiver)]) // STEP 1 : get accounts of sender/receiver
     .then(function (accounts) {
@@ -99,9 +91,10 @@ var payment = function (paymentInfo) { // TODO : Replace parameters with relevan
     })
 }
 
-payment(paymentInfo)
-
-module.exports = web3
+module.exports = {
+  registration : registration,
+  payment : payment
+}
 
 // TODO : (Ethereum-hdkey/bip39)Test making new wallet and account for user in ganache
 

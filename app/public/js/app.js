@@ -18,7 +18,7 @@ var register = function (user) {
   $('#registration').on('click', function (event) {
     $.ajax({
       method: 'POST',
-      url: '/account/create',
+      url: '/apis/account/create',
       data: {
         username: user.name,
         licenseNumber: user.licenseNumber,
@@ -26,8 +26,8 @@ var register = function (user) {
       },
       success: function (data) {
         console.log('Successful registration')
-        console.log(data.privateKey)
-        $('#keyStore').text(JSON.stringify(data.privateKey))
+        console.log(data)
+        $('#keyStore').text(JSON.stringify(data.ethAccountPvKey))
       // TODO : Make a file to download EncryptedPrivateKey
       // TODO : We need to handle this issue - User might need to write EncryptedPrivateKey everytime
       },
