@@ -9,7 +9,36 @@ if (typeof web3 != 'undefined') {
   var web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545')) // NOTE : ganache-cli -p 8545 will open up port
 }
 
-// NOTE : register account on ethereum network
+// NOTE : make new wallet and account
+var createWallet = function (accountIndex=0) {
+  return new Promise(function (resolve, reject) {
+    var mnemonic = bip39.generateMnemonic()
+    var seed = bip39.mnemonicToSeed(mnemonic)
+    var HDKey = hdkey.fromMasterSeed(seed)
+    var path = "m/44'/60'/0'/0/" + accountIndex
+    var defaultAccountHDKey = HDKey.derivePath(path)
+    var defaultAccountPvKey = defaultAccountHDKey._hdkey._privateKey // Buffer
+    var defaultAccountAddress = utils.privateToAddress(defaultAccountPvKey) // Buffer
+    console.log(mnemonic)
+    resolve(mnemonic)
+    // resolve({ethAccountAddress: defaultAccountAddress.toString('hex'),ethAccountPvKey: defaultAccountPvKey.toString('hex')})
+  })
+}
+
+// NOTE : return wallet and account
+var loadWallet = function (mnemonic,accountIndex = 0) { // NOTE : wallet from ganache 10 accounts
+  return new Promise(function (resolve, reject) {
+    var seed = bip39.mnemonicToSeed(mnemonic)
+    var HDKey = hdkey.fromMasterSeed(seed)
+    var path = "m/44'/60'/0'/0/" + accountIndex 
+    var accountHDKey = HDKey.derivePath(path)
+    var accountPvKey = defaultAccountHDKey._hdkey._privateKey
+    var accountAddress = utils.privateToAddress(accountPvKey)
+    resolve({ethAccountAddress : accountAddress.toString('hex'), ethAccountPvKey : accountPvKey.toString('hex')})
+  })
+}
+
+// NOTE : make new account on local node
 var registration = function () {
   return new Promise(function (resolve, reject) {
     var ethAccount = web3.eth.accounts.create()
@@ -112,51 +141,10 @@ var payment = function (paymentInfo) { // TODO : Replace parameters with relevan
 }
 
 module.exports = {
+  createWallet : createWallet,
+  loadWallet : loadWallet,
   showAllAccounts: showAllAccounts,
   encryptPvKey: encryptPvKey,
   registration: registration,
   payment: payment
 }
-
-
-//TODO : remove fixture
-var paymentInfo = {
-  pvKeys: { // hardcoded private keys 
-    sender: '0x32d4e4b8deae4967f6ec305683921b1d46517767ef7a3411c27bbcf24fa7b757',
-    receiver: '0x90e40b307bd5ee5c7f5285aecffcf0fb223ff1cf802d913237ecaf2f962e251e'
-  },
-  txInfo: {
-    gasPrice: '200', // string
-    gas: '210000', // string
-    value: '1000', // string
-    data: '' // string
-  }
-}
-
-var loadGanacheWallet = function () { // NOTE : wallet from ganache 10 accounts
-  var mnemonic = 'humor tragic easy wing rack silk diesel suit cloth alley unknown wine'
-  var path = "m/44'/60'/0'/0/0" // first account
-  var seed = bip39.mnemonicToSeed(mnemonic)
-  var HDKey = hdkey.fromMasterSeed(seed)
-  var examHDKey = HDKey.derivePath(path)
-  return examHDKey._hdkey._privateKey
-}
-
-var createWallet = function () {
-  var mnemonic = bip39.generateMnemonic()
-  var path = "m/44'/60'/0'/0/0" // first account
-  var seed = bip39.mnemonicToSeed(mnemonic)
-  var HDKey = hdkey.fromMasterSeed(seed)
-  var examHDKey = HDKey.derivePath(path)
-  return examHDKey._hdkey._privateKey
-}
-
-var transferFromWalletToWallet = function () {
-  var pvKey1 = loadGanacheWallet()
-  var pvKey2 = createWallet()
-  paymentInfo.pvKeys.sender = "0x" + pvKey1.toString('hex')
-  paymentInfo.pvKeys.receiver = "0x" + pvKey2.toString('hex')
-  payment(paymentInfo)
-}
-
-transferFromWalletToWallet()

@@ -53,6 +53,25 @@ var register = function (user) {
   })
 }
 
+var createWallet = function () {
+  $('#createWallet').on('click', function (event) {
+    $.ajax({
+      method: 'POST',
+      url: '/apis/wallet/create',
+      data: {},
+      success: function (data) {
+        console.log('Successfully made a new wallet')
+        console.log(data)
+        $('#keyStore').text(JSON.stringify(data.mnemonic))
+      },
+      error: function (error) {
+        console.log('Error making new wallet')
+        console.log(error)
+      }
+    })
+  })
+}
+
 var payment = function () {
   $('#payment').on('click', function (event) {
     $.ajax({
@@ -74,13 +93,13 @@ var payment = function () {
 var showAllAccounts = function () {
   $('#allAccounts').on('click', function (event) {
     $.ajax({
-      method : 'GET',
-      url : 'apis/account/index',
-      success : function(msg){
+      method: 'GET',
+      url: 'apis/account/index',
+      success: function (msg) {
         console.log(msg.result)
         console.log(msg.accounts)
       },
-      error : function(msg){
+      error: function (msg) {
         console.log(msg.result)
         console.log(msg.error)
       }
@@ -93,4 +112,5 @@ $(document).ready(function (e) {
   register(receiver)
   payment()
   showAllAccounts()
+  createWallet()
 })

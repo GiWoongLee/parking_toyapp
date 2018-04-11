@@ -16,14 +16,14 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'views/home.html'))
 })
 
-app.get('/apis/account/index',function(req,res){
+app.get('/apis/account/index', function (req, res) {
   blockchain.showAllAccounts()
-  .then(function(accounts){
-    res.status(200).json({result: 'success', accounts : accounts})
-  })
-  .catch(function(error){
-    res.status(400).json({result: 'error', error: error})
-  })
+    .then(function (accounts) {
+      res.status(200).json({result: 'success', accounts: accounts})
+    })
+    .catch(function (error) {
+      res.status(400).json({result: 'error', error: error})
+    })
 })
 
 app.post('/apis/account/create', function (req, res) {
@@ -66,12 +66,23 @@ app.post('/apis/account/create', function (req, res) {
       return Promise.all([createAccount(data), blockchain.encryptPvKey(data)])
     })
     .then(function (data) {
-      res.status(200).json({result:'success',encryptedPvKey: data[1].encryptedPvKey}) // data as an array containing "",encryptedPrivateKey
+      res.status(200).json({result: 'success',encryptedPvKey: data[1].encryptedPvKey}) // data as an array containing "",encryptedPrivateKey
     })
     .catch(function (error) {
       console.log(error)
-      res.status(400).json({result:'error', error: error, api: '/apis/account/create'})
+      res.status(400).json({result: 'error', error: error, api: '/apis/account/create'})
     })
+})
+
+// NOTE : Input() => Output()
+app.post('/apis/wallet/create',function(req,res){
+  blockchain.createWallet()
+  .then(function(walletMnemonic){
+    res.status(200).json({result:'success',mnemonic:walletMnemonic})
+  })
+  .catch(function(error){
+    res.status(400).json({result:'error',error:error})
+  })
 })
 
 // NOTE : Input(sender,receiver,amount) => Output()
@@ -81,7 +92,7 @@ app.post('/apis/payment', function (req, res) {
       res.status(200).json({result: 'success'})
     })
     .catch(function () {
-      res.status(400).json({result: 'error', error : error, api: '/apis/payment'})
+      res.status(400).json({result: 'error', error: error, api: '/apis/payment'})
     })
 })
 
