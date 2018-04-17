@@ -1,5 +1,12 @@
 pragma solidity ^0.4.19;
 
+// TODO : Modify logics of APS SmartContract 
+// TODO : Add logic to Urbana smartcontract
+// TODO : Deploy SmartContract(APS&Urbana)
+// TODO : Execute smartcontract function from ganache
+// TODO : Execute smartcontract function from ethereum network
+// TODO : Execute smartcontract function from other networks
+
 // TODO : Add ERC223 and other 
 // TODO : When creating the contract, send enough Ether to it so that it can buy back all the tokens on the market otherwise your contract will be insolvent and your users won't be able to sell their tokens
 contract APS{
@@ -7,7 +14,7 @@ contract APS{
     string public symbol; // APS
     uint256 public decimals = 18;
     uint256 public totalSupply; 
-    address public owner; // Urbana
+    address public centralMinter; // Urbana
     uint256 public buyPrice; // estimated in wei
     uint256 public sellPrice; // estimated in wei
 
@@ -15,25 +22,96 @@ contract APS{
     mapping (address => mapping(address => uint256)) allowed;
     mapping (address => bool) public frozenAccount; // freezing balances of invalid account
 
+    event setPrice(uint256 buyPrice, uint256 sellPrice);
+    event MintToken(uint256 amount);
+    event BurnToken(uint256 amount);
+    event FrozenAccounts(address target, bool frozen);
+
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);    
+    // NOTE: Suggested ERC20 API changes to address attack, overloading events
+    event Transfer(address indexed _spender, address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _oldValue, uint256 value);
+    
     // Function that is called only once on creation
     function APS(
         string tokenName,
         string tokenSymbol,
         uint256 initialSupply,
-        address centralMinter // Set owner with parameter on initialization
+        address tokenCentralMinter // Set owner with parameter on initialization
     ) public {
         name = tokenName;
         symbol = tokenSymbol;
         totalSupply = initialSupply * 10 ** decimals;
         balanceOf[msg.sender] = totalSupply;
-        if(centralMinter!=0x0) owner = centralMinter; // Set Urbana as a owner on initialization
+        if(tokenCentralMinter!=0x0) centralMinter = tokenCentralMinter; // Set Urbana as a owner on initialization
     }
 
-    // TODO : Replace owner as centralMinter;
-    modifier onlyOwner {
-        require(msg.sender == owner);
+    modifier onlyCentralMinter {
+        require(msg.sender == centralMinter);
         _;
     }
+
+    /*  
+     * CentralMinter Functions 
+     * Functions related with controlling amount of APS in circulation
+     * Functions related with controlling node accounts
+     */
+
+    // Set buy/sell price of APS
+    function setPrices(uint256 newBuyPrice,uint256 newSellPrice) public onlyCentralMinter {
+        buyPrice = newBuyPrice;
+        sellPrice = newSellPrice;
+        emit setPrice(buyPrice,sellPrice);
+    }
+
+    // Issue new tokens in circulation
+    function mintToken(uint256 mintedAmount) public onlyCentralMinter{
+        balanceOf[centralMinter] += mintedAmount;
+        totalSupply += mintedAmount;
+        emit MintToken(mintedAmount);
+    }
+
+    // Remove tokens from circulation to control token prcie
+    function burnToken(uint256 burnedAmount) public onlyCentralMinter{
+        balanceOf[centralMinter] -= burnedAmount;
+        totalSupply -= burnedAmount;
+        emit BurnToken(burnedAmount);
+    }
+
+    function freezeAccount(address target,bool freeze) public onlyCentralMinter{
+        frozenAccount[target] = freeze;
+        emit FrozenAccounts(target,freeze);
+    }
+
+    /*  
+     * Node functions
+     * Functions related with buying/selling APS
+     * ERC20 Token functions
+     */
+
+    function buy() payable public returns (uint256 amount) {
+        amount = msg.value / buyPrice;
+        require(balanceOf[this]>=amount);
+        balanceOf[msg.sender] += amount;
+        balanceOf[this] -= amount;
+        emit Transfer(this, msg.sender, amount);
+        return amount;
+    }
+
+    function sell(uint256 amount) payable public returns (uint256 revenue) {
+        require(balanceOf[msg.sender]>=amount);
+        balanceOf[msg.sender] -= amount;
+        balanceOf[this] += amount;
+        revenue = amount * sellPrice;
+        msg.sender.transfer(revenue); // sends ether to the seller
+        emit Transfer(msg.sender,this,amount);
+        return revenue;
+    }
+
+    /*  ERC20 Token Functions
+     *  NOTE : ERC223, ERC721 could be used as an alternative to current ERC20 Tokens
+     */
 
     // ERC20 Standard: Get the total token supply
     function totalSupply() public constant returns (uint256){
@@ -107,57 +185,4 @@ contract APS{
         emit Transfer(msg.sender,_from,_to,_value);
         return true;
     }
-
-    function setPrices(uint256 newBuyPrice,uint256 newSellPrice) onlyOwner {
-        buyPrice = newBuyPrice;
-        sellPrice = newSellPrice;
-    }
-
-    function buy() payable public returns (uint256 amount) {
-        amount = msg.value / buyPrice;
-        require(balanceOf[this]>=amount);
-        balanceOf[msg.sender] += amount;
-        balanceOf[this] -= amount;
-        emit Transfer(this, msg.sender, amount);
-        return amount;
-    }
-
-    function sell(uint256 amount) payable public returns (uint256 revenue) {
-        require(balanceOf[msg.sender]>=amount);
-        balanceOf[msg.sender] -= amount;
-        balanceOf[this] += amount;
-        revenue = amount * sellPrice;
-        msg.sender.transfer(revenue); // sends ether to the seller
-        emit Transfer(msg.sender,this,amount);
-        return revenue;
-    }
-
-    // Issue new tokens on circulation to control token price
-    function mintToken(uint256 mintedAmount) onlyOwner{
-        balanceOf[owner] += mintedAmount;
-        totalSupply += mintedAmount;
-        emit MintToken(mintedAmount);
-    }
-
-    // Remove tokens from circulation to control token prcie
-    function burnToken(uint256 burnedAmount) onlyOwner{
-        balanceOf[owner] -= burnedAmount;
-        totalSupply -= burnedAmount;
-        emit BurnToken(burnedAmount);
-    }
-
-    function freezeAccount(address target,bool freeze) onlyOwner{
-        frozenAccount[target] = freeze;
-        emit FrozenAccounts(target,freeze);
-    }
-
-
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);    
-    // NOTE: Suggested ERC20 API changes to address attack, overloading events
-    event Transfer(address indexed _spender, address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _oldValue, uint256 value);
-    event MintToken(uint256 amount);
-    event BurnToken(uint256 amount);
-    event FrozenAccounts(address target, bool frozen);
 }
