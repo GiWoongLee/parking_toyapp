@@ -4,10 +4,9 @@ pragma solidity ^0.4.19;
 // TODO : Add logic to Urbana smartcontract
 // TODO : Deploy SmartContract(APS&Urbana)
 // TODO : Execute smartcontract function from ganache
-// TODO : Execute smartcontract function from ethereum network
+// TODO : Execute smartcontract function from ethereum network using geth
 // TODO : Execute smartcontract function from other networks
 
-// TODO : Add ERC223 and other 
 // TODO : When creating the contract, send enough Ether to it so that it can buy back all the tokens on the market otherwise your contract will be insolvent and your users won't be able to sell their tokens
 contract APS{
     string public name; // AutopaymentParkingSystem
@@ -185,4 +184,19 @@ contract APS{
         emit Transfer(msg.sender,_from,_to,_value);
         return true;
     }
+}
+
+// TODO : Own APS and make transaction from clients requests
+// TODO : Split logics to smartcontract and web server 
+contract Urbana{
+    enum State {Reserved, Parked, Ended} // State of Parking
+    mapping (address => string[]) parkingSpaces; // Parking spaces per owners
+
+    // TODO : add states and functions
+    function registerRentSpace() public returns (bool success);
+    function requestRental() public returns (bool success);
+    function rentalReserved() public returns (bool succes);
+    function parkingStarted() public returns (bool success);
+    function parkingEnded() public returns (bool success);
+    function payment() public returns (bool success);
 }
