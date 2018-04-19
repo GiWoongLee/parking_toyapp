@@ -1,8 +1,6 @@
-pragma solidity ^0.4.19;
+pragma solidity ^0.4.21;
 
-// TODO : Modify logics of APS SmartContract 
 // TODO : Add logic to Urbana smartcontract
-// TODO : Deploy SmartContract(APS&Urbana)
 // TODO : Execute smartcontract function from ganache
 // TODO : Execute smartcontract function from ethereum network using geth
 // TODO : Execute smartcontract function from other networks
@@ -21,7 +19,7 @@ contract APS{
     mapping (address => mapping(address => uint256)) allowed;
     mapping (address => bool) public frozenAccount; // freezing balances of invalid account
 
-    event setPrice(uint256 buyPrice, uint256 sellPrice);
+    event SetPrice(uint256 buyPrice, uint256 sellPrice);
     event MintToken(uint256 amount);
     event BurnToken(uint256 amount);
     event FrozenAccounts(address target, bool frozen);
@@ -36,14 +34,15 @@ contract APS{
     function APS(
         string tokenName,
         string tokenSymbol,
-        uint256 initialSupply,
-        address tokenCentralMinter // Set owner with parameter on initialization
+        uint256 initialSupply
+        // address tokenCentralMinter // Set owner with parameter on initialization
     ) public {
         name = tokenName;
         symbol = tokenSymbol;
         totalSupply = initialSupply * 10 ** decimals;
         balanceOf[msg.sender] = totalSupply;
-        if(tokenCentralMinter!=0x0) centralMinter = tokenCentralMinter; // Set Urbana as a owner on initialization
+        centralMinter = msg.sender;
+        // if(tokenCentralMinter!=0x0) centralMinter = tokenCentralMinter; // Set Urbana as a owner on initialization
     }
 
     modifier onlyCentralMinter {
@@ -61,7 +60,7 @@ contract APS{
     function setPrices(uint256 newBuyPrice,uint256 newSellPrice) public onlyCentralMinter {
         buyPrice = newBuyPrice;
         sellPrice = newSellPrice;
-        emit setPrice(buyPrice,sellPrice);
+        emit SetPrice(buyPrice,sellPrice);
     }
 
     // Issue new tokens in circulation
@@ -184,19 +183,4 @@ contract APS{
         emit Transfer(msg.sender,_from,_to,_value);
         return true;
     }
-}
-
-// TODO : Own APS and make transaction from clients requests
-// TODO : Split logics to smartcontract and web server 
-contract Urbana{
-    enum State {Reserved, Parked, Ended} // State of Parking
-    mapping (address => string[]) parkingSpaces; // Parking spaces per owners
-
-    // TODO : add states and functions
-    function registerRentSpace() public returns (bool success);
-    function requestRental() public returns (bool success);
-    function rentalReserved() public returns (bool succes);
-    function parkingStarted() public returns (bool success);
-    function parkingEnded() public returns (bool success);
-    function payment() public returns (bool success);
 }
