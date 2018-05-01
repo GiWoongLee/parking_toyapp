@@ -120,6 +120,30 @@ contract('APS', function (accounts) {
         assert.equal(balance4[1],balance2[1]+1,"Buyer didn't get 1 APS paying 1 ether!")
     })
 
+    it('Buyer get 1 ether from refund paying 1 APS',async function(){
+        var checkBalances = async function(account){ // check APS, Ether balances
+            var etherBalance = await web3.eth.getBalance(account)
+            etherBalance = toEther(etherBalance.toNumber())
+            var APSBalance = await APSContract.balanceOf(account)
+            APSBalance = toEther(APSBalance.toNumber())
+            return [etherBalance,APSBalance]
+        }  
+
+        const contractAddress = APSContract.address
+        const seller = accounts[1]
+        const decimals = 18
+        const unit = 10 ** decimals
+        const amount = 1
+        
+        balance1 = await checkBalances(seller) // check balance before payment
+        balance2 = await checkBalances(contractAddress) // check balance before payment
+        await APSContract.sell.sendTransaction(amount*unit,{from:seller,value:0}) // pay 1 ether to buy 1 APS
+        balance3 = await checkBalances(seller) // check balance after payment
+        balance4 = await checkBalances(contractAddress) // check balance after payment
+        
+        assert.equal(balance3[1],balance1[1]-1,"Seller didn't pay 1 APS to get refund!")
+        assert.equal(balance4[0],balance2[0]-1,"Contract didn't give 1 ether refund to seller!")
+    })
 
   //   it('', function () {
   //     // transfer APS to another address
