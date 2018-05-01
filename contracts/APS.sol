@@ -1,4 +1,4 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.23;
 
 // TODO : Add logic to Urbana smartcontract
 // TODO : Execute smartcontract function from ganache
@@ -87,23 +87,30 @@ contract APS{
      * Functions related with buying/selling APS
      * ERC20 Token functions
      */
-
     function buy() payable public returns (uint256 amount) {
-        amount = msg.value / buyPrice;
-        require(balanceOf[this]>=amount);
+        // amount = uint256(msg.value / buyPrice); //TODO : Refactor division arithmetic, solidity not supporting floating point 
+        amount = msg.value; // Assuming 1 ether = 1 APS
+        require(balanceOf[centralMinter]>= amount);
         balanceOf[msg.sender] += amount;
-        balanceOf[this] -= amount;
-        emit Transfer(this, msg.sender, amount);
-        return amount;
+        balanceOf[centralMinter] -= amount;
+        emit Transfer(centralMinter,msg.sender,amount);
+        return amount;       
     }
+
+    /*   In case of contract holding all balances
+     *   require(balanceOf[this]>=amount); // in case of contract holding all balances
+     *   balanceOf[msg.sender] += amount;
+     *   balanceOf[this] -= amount; // in case of contract holding all balances
+     *   emit Transfer(this, msg.sender, amount);
+     */
 
     function sell(uint256 amount) payable public returns (uint256 revenue) {
         require(balanceOf[msg.sender]>=amount);
         balanceOf[msg.sender] -= amount;
-        balanceOf[this] += amount;
+        balanceOf[centralMinter] += amount;
         revenue = amount * sellPrice;
         msg.sender.transfer(revenue); // sends ether to the seller
-        emit Transfer(msg.sender,this,amount);
+        emit Transfer(msg.sender,centralMinter,amount);
         return revenue;
     }
 

@@ -1,5 +1,6 @@
 var APS = artifacts.require('./APS')
 
+
 contract('APS', function (accounts) {
   it('Total supply of APS is 10000', function () {
     APS.deployed().then(function (instance) {
@@ -22,7 +23,6 @@ contract('APS', function (accounts) {
     })
     .then(function (balance) {
         balance = web3.fromWei(balance.toNumber(), 'ether')
-        console.log(balance)
         assert.equal(balance, 10000, 'Balance of central Minter is not 0!')
     })
   })
@@ -37,17 +37,17 @@ contract('APS', function (accounts) {
     })
   })
 
-  it('Set buy price of APS 0.02 ether and sell price 0.01', function () {
+  it('Set buy price of APS 1 ether and sell price 1', function () {
     APS.deployed().then(function (instance) {
-        instance.setPrice(0.02, 0.01)
+        instance.setPrice(10**18, 10**18)
         return instance
     })
     .then(function () {
         return Promise.all([instance.buyPrice(), instance.sellPrice()])
     })
     .then(function (results) {
-        assert.equal(results[0], 0.02, 'Buy price of APS is 0.02')
-        assert.equal(results[1], 0.01, 'Sell price of APS is 0.01')
+        assert.equal(results[0], 10**18, 'Buy price of APS is 1')
+        assert.equal(results[1], 10**18, 'Sell price of APS is 1')
     })
   })
 
@@ -79,11 +79,51 @@ contract('APS', function (accounts) {
     })
   })
 
-  //   it('', function () {
-  //     // Get the initial ether/APS balance of accounts
-  //     // Buy APS with ethers
-  //     // show decrement of ether, show increment of APS
-  //   })
+  it('Initial APS balance of default account is 0',function(){
+    APS.deployed().then(function(instance){
+        instance.balanceOf(accounts[0]); // print APS balance of User A
+    })
+    .then(function(amount){
+        assert.equal(amount,0,"Initial APS balance of default account A is not 0!")
+    })
+  })
+
+  it('Pay 1 ether to buy 1 token from account[1] to centralMinter',function(){
+    var checkBalance = function(instance){
+        return new Promise(async function(resolve,reject){
+            var etherBalance = web3.fromWei(web3.eth.getBalance(accounts[1]).toNumber(),'ether')
+            var APSBalance;
+            await instance.balanceOf(accounts[1]).then(function(balance){
+                APSBalance = web3.fromWei(balance.toNumber(),'ether');
+            })
+            resolve([etherBalance,APSBalance])
+        })
+    }
+
+    APS.deployed().then(function(instance){
+        checkBalance(instance) // check ether balance before payment
+        .then(function(balances){
+            return instance.buy.sendTransaction({from:accounts[1],value:10**18}) // NOTE : 1 ether = 1 APS
+        })
+        .then(function(result){
+            return checkBalance(instance) // check ether balance after payment
+        })
+        .then(function(balances){
+            assert.equal(balances[1],1,"APS balance of account[1] is not 1!")
+            return web3.fromWei(web3.eth.getBalance(instance.address).toNumber(),'ether')
+        })
+        .then(function(etherBalance){
+            assert.equal(etherBalance,1,"Ether balance of centralMinter is not 1!")
+        })
+        .catch(function(error){
+            console.log(error)
+        })
+    })
+    
+  })
+
+
+
 
   //   it('', function () {
   //     // transfer APS to another address
