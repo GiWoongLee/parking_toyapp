@@ -28,49 +28,24 @@ contract('APS', function (accounts) {
         cmBalance = toEther(cmBalance.toNumber()) // big number -> number(wei) -> ether
         assert.equal(cmBalance,10000,"Balance of Central Minter is not 0!")
 
+        var amount = await APSContract.balanceOf(accounts[0]) // default account as accounts[0] in ganache
+        amount = toEther(amount.toNumber())
+        assert.equal(amount,10000,'Initial APS balance of default account, accounts[0] is not 10000!') 
+
         var accBalances = accounts.map(async account => {return await APSContract.balanceOf(account)}) // account balances
         var balances; // balance except centralMinter(=accounts[0])
         await Promise.all(accBalances)
-            .then((balances)=> { return balances.map(balance => toEther(balance.toNumber())) 
+            .then((balances)=> balances.map(balance => toEther(balance.toNumber())) 
                 .filter((balance,index) => (index!=0))
                 .reduce((sum,balance) => sum + balance)
-            })
+            )
             .then((amount) => {balances = amount})
             .catch((error) => {console.log(error)})
         
         assert.equal(balances,0,"Total balances of other accounts is not 0!")
     })
 
-
-    it('Initial APS balance of default account is 10000',async function(){
-        const centralMinter = accounts[0]
-        var amount = await APSContract.balanceOf(centralMinter)
-        amount = toEther(amount.toNumber())
-        assert.equal(amount,10000,'Initial APS balance of default account A is not 10000!')    
-    })
-
-    it('Initial APS balance of other accounts is 0',async function(){
-        // TODO : refactor map function 
-        // restBalances = accounts.map(async account => (await APSContract.balanceOf(account)))
-        // .map(balance => toEther(balance.toNumber()))
-        //     .filter((balance,index) => (index!=0))
-        //     .reduce((sum,balance) => sum + balance)
-        // assert.equal(restBalances,0,"Total balances of other accounts is not 0!")   
-    })
-
     it('Ether Balance of contract is 0', async function(){
-        var balance = await web3.eth.getBalance(APSContract.address) // return type : big number
-        balance = toEther(balance.toNumber())
-        assert.equal(balance, 0, 'Ether Balance of contract is not 0!')
-    })
-
-    it('Initial Ether Balance of accounts is ', async function(){
-         // TODO : refactor map function 
-        // restBalances = accounts.map(async account => (await APSContract.balanceOf(account)))
-        // .map(balance => toEther(balance.toNumber()))
-        //     .filter((balance,index) => (index!=0))
-        //     .reduce((sum,balance) => sum + balance)
-        // assert.equal(restBalances,0,"Total balances of other accounts is not 0!")   
         var balance = await web3.eth.getBalance(APSContract.address) // return type : big number
         balance = toEther(balance.toNumber())
         assert.equal(balance, 0, 'Ether Balance of contract is not 0!')
