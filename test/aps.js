@@ -166,11 +166,9 @@ contract('APS', function (accounts) {
     
         var senderBalanceBef = await APSContract.balanceOf(sender)
         var receiverBalanceBef = await APSContract.balanceOf(receiver)
-        var defaultAccountBef = toEther((await APSContract.balanceOf(accounts[0])).toNumber())
-        var transaction = await APSContract.transfer.sendTransaction(receiver,amount,{from:sender})
+        await APSContract.transfer.sendTransaction(receiver,amount,{from:sender})
         var senderBalanceAft = await APSContract.balanceOf(sender)
         var receiverBalanceAft = await APSContract.balanceOf(receiver)
-        var defaultAccountAft = toEther((await APSContract.balanceOf(accounts[0])).toNumber())
         
         senderBalanceBef = toEther(senderBalanceBef.toNumber(),'ether')
         senderBalanceAft = toEther(senderBalanceAft.toNumber(),'ether')
@@ -182,13 +180,31 @@ contract('APS', function (accounts) {
     })
 
 
-    // it('Allowance from account[0] to account[1] is 0', async function(){
-    //     var spender = accounts[1]
-    //     await APSContract.approve(spender,0)
-    //     var balance = await APSContract.allowance(accounts[0],accounts[1]) // return type : big number
-    //     assert.equal(allowance, 0, 'Allowance from account[0] to account[1] is not 0!')
-    // })
 
+    it('accounts[2] transfer 10 APS to accounts[3] on behalf of accounts[1]',async function(){
+        var sender = accounts[1]
+        var spender = accounts[2]
+        var receiver = accounts[3]
+        var amount = 10 ** 19
+
+        await APSContract.approve.sendTransaction(spender,amount,{from:sender})
+        var allowedAmount = await APSContract.allowance(sender,spender)
+        assert.equal(allowedAmount,10**19,'Approval from accounts[0] to accounts[1] failed!')
+
+        var senderBalanceBef = await APSContract.balanceOf(sender)
+        var receiverBalanceBef = await APSContract.balanceOf(receiver)
+        await APSContract.transferFrom.sendTransaction(sender,receiver,amount,{from:spender})
+        var senderBalanceAft = await APSContract.balanceOf(sender)
+        var receiverBalanceAft = await APSContract.balanceOf(receiver)
+    
+        senderBalanceBef = toEther(senderBalanceBef.toNumber(),'ether')
+        senderBalanceAft = toEther(senderBalanceAft.toNumber(),'ether')
+        receiverBalanceBef = toEther(receiverBalanceBef.toNumber(),'ether')        
+        receiverBalanceAft = toEther(receiverBalanceAft.toNumber(),'ether')
+        
+        assert.equal(senderBalanceAft,senderBalanceBef-10,"Accounts[1] didn't send 10 APS!")
+        assert.equal(receiverBalanceAft,receiverBalanceBef + 10,"Accounts[2] didn't receive 10 APS!")
+    })
 
 
 })
