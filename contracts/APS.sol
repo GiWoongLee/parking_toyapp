@@ -1,19 +1,14 @@
 pragma solidity ^0.4.23;
 
-// TODO : Add logic to Urbana smartcontract
-// TODO : Execute smartcontract function from ganache
-// TODO : Execute smartcontract function from ethereum network using geth
-// TODO : Execute smartcontract function from other networks
-
-// TODO : When creating the contract, send enough Ether to it so that it can buy back all the tokens on the market otherwise your contract will be insolvent and your users won't be able to sell their tokens
 contract APS{
     string public name; // AutopaymentParkingSystem
     string public symbol; // APS
     uint256 public decimals = 18;
     uint256 public totalSupply; 
     address public centralMinter; // Urbana
-    uint256 public buyPrice; 
-    uint256 public sellPrice; 
+    uint256 public divisor; // Denominator used with buyPrice, sellPrice. If value(APS) > value(ETH), divisor = 1. Otherwise, divisor = 10**N()
+    uint256 public buyPrice; // Numerator used with divisor. 1 APS = ($buyPrice) ETH.
+    uint256 public sellPrice;  // Numerator used with divisor. 1 APS = ($sellPrice) ETH.
 
     mapping (address => uint256) public balanceOf;
     mapping (address => mapping(address => uint256)) allowed;
@@ -56,9 +51,10 @@ contract APS{
      */
 
     // Set buy/sell price of APS
-    function setPrices(uint256 newBuyPrice,uint256 newSellPrice) public onlyCentralMinter {
+    function setPrices(uint256 newBuyPrice,uint256 newSellPrice, uint256 newDivisor) public onlyCentralMinter {
         buyPrice = newBuyPrice;
         sellPrice = newSellPrice;
+        divisor = newDivisor;
         emit SetPrice(buyPrice,sellPrice);
     }
 
@@ -87,7 +83,8 @@ contract APS{
      * ERC20 Token functions
      */
     function buy() payable public returns (uint256 amount) {
-        amount = msg.value / buyPrice; 
+        if(divisor == 1) amount = msg.value / buyPrice;
+        else amount = msg.value * (divisor/buyPrice);
         require(balanceOf[centralMinter]>= amount);
         balanceOf[msg.sender] += amount;
         balanceOf[centralMinter] -= amount;
@@ -106,7 +103,7 @@ contract APS{
         require(balanceOf[msg.sender]>=amount);
         balanceOf[msg.sender] -= amount;
         balanceOf[centralMinter] += amount;
-        revenue = amount * sellPrice;
+        revenue = amount * sellPrice / divisor;
         msg.sender.transfer(revenue); // sends ether to the seller
         emit Transfer(msg.sender,centralMinter,amount);
         return revenue;
