@@ -1,5 +1,7 @@
 pragma solidity ^0.4.23;
 
+// import APS smartcontract
+
 contract Urbana{
 
     struct user{
@@ -7,7 +9,7 @@ contract Urbana{
         string license_number;
         string name;
         string phone_number;
-        // TODO : uint256 APS_balance; //amount of APS 
+        uint256 aps_balance; //amount of APS 
     }
     
     struct parking_space{
@@ -64,17 +66,36 @@ contract Urbana{
      * User needs to pay ether to get APS. After payment to APS smartcontract, APS balance will be stored on user account
      */
 
-    function createUser(address _account, string _lincense_number, string _name, string _phone_number) public { 
+    function create_user(address _account, string _lincense_number, string _name, string _phone_number) public { 
         require(users[_account]._account != _account); // check duplicate account number
         require(_account != 0x0);
         users[_account] = user(_account,_license_number,_name,_phone_number); 
         // TODO : call APS contract to exchange ether into APS and store APS info of user into user.
     }
 
-    function createParkingSpace(uint256 _id, address _owner, string _addr, uint256 _zip, uint256 _block_sizes, uint256 _hourly_rates, uint256 _curr_occupancy_levels, bool _is_parking_available) public {
+    function create_parking_space(uint256 _id, address _owner, string _addr, uint256 _zip, uint256 _block_sizes, uint256 _hourly_rates, uint256 _curr_occupancy_levels, bool _is_parking_available) public {
         require(users[_owner]._account ! = 0x0); // check owner account exists
         require(parking_spaces[_id]._id == 0x0); // check parking_space does not exist
         parking_spaces[_id] = parking_space(_id,_owner,_addr,_zip,_block_sizes,_hourly_rates,_curr_occupancy_levels,_is_parking_available);
+    }
+
+    /*  
+     * Make a deposit of APS on user account. Charge APS on user creation or whenever user 
+     */
+
+    function _exchange_aps_with_ether(address _buyer, uint256 _ether_amount) internal payable returns (uin256 aps_amount){
+        uint256 aps_amount; // TODO : return aps_amount after buying aps from APS smartcontract.
+        // APS.buy.sendTransaction({from:_buyer,value:_ether_amount})
+        returns aps_amount;
+    }
+
+    function charge_APS(address _buyer, uint256 _ether_amount) public payable {
+        uint256 memory min_amount; // initialize minimum amount of ether
+        require(users[_buyer]._buyer != 0x0); // check user exists
+        require(ether_amount > min_amount);
+        uint256 _aps_amount = _exchange_aps_with_ether(_buyer,_ether_amount);
+        user storage user = users[_buyer];
+        user.aps_balance += _aps_amount;
     }
 
 }
