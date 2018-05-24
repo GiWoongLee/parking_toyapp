@@ -56,6 +56,9 @@ contract Urbana{
     mapping(address => user) public users;
     mapping(uint256 => parking_space) public parking_spaces;
     mapping(uint256 => mapping (uint256 => bool)) parking_block_occupied; // NOTE : (parking_space_id) => (parking_block) => (occupied or not)
+    mapping(uint256 => reservation) public reservations;
+    mapping(uint256 => rental) public rentals;
+    mapping(uint256 => payment) public payments;
     
     constructor () public {
 
@@ -67,15 +70,17 @@ contract Urbana{
      */
 
     function create_user(address _account, string _lincense_number, string _name, string _phone_number) public { 
-        require(users[_account]._account != _account); // check duplicate account number
         require(_account != 0x0);
+        require(users[_account]._account == 0x0); // check duplicate account number
         users[_account] = user(_account,_license_number,_name,_phone_number); 
         // TODO : call APS contract to exchange ether into APS and store APS info of user into user.
     }
 
     function create_parking_space(uint256 _id, address _owner, string _addr, uint256 _zip, uint256 _block_sizes, uint256 _hourly_rates, uint256 _curr_occupancy_levels, bool _is_parking_available) public {
         require(users[_owner]._account ! = 0x0); // check owner account exists
-        require(parking_spaces[_id]._id == 0x0); // check parking_space does not exist
+        require(_id != 0x0);
+        require(parking_spaces[_id]._id == 0x0); // check parking_space with smae id does not exist
+        user storage owner = users[_owner];
         parking_spaces[_id] = parking_space(_id,_owner,_addr,_zip,_block_sizes,_hourly_rates,_curr_occupancy_levels,_is_parking_available);
     }
 
@@ -89,7 +94,7 @@ contract Urbana{
         returns aps_amount;
     }
 
-    function charge_APS(address _buyer, uint256 _ether_amount) public payable {
+    function charge_aps(address _buyer, uint256 _ether_amount) public payable {
         uint256 memory min_amount; // initialize minimum amount of ether
         require(users[_buyer]._buyer != 0x0); // check user exists
         require(ether_amount > min_amount);
@@ -97,5 +102,42 @@ contract Urbana{
         user storage user = users[_buyer];
         user.aps_balance += _aps_amount;
     }
+
+    /*  
+     * Transactions related with parking 
+     */
+
+    function create_reservation(uint256 _reservation_id, address _renter, uint256 _parking_space_id, uint256 _parking_block_number, uint256 _reservation_time, uint256 _pre_financing, uint256 _penalty, uint256 _reservation_end_time, bool _ended) public {
+        require(_reservation_id != 0x0); 
+        require(reservations[_reservation_id].id == 0x0); // check reservation with same id does not exists
+        require(users[_renter]._renter != 0x0); // check user exists
+        user storage renter = users[_renter];
+        parking_space storage reserved_space = parking_spaces[_parking_space_id];
+        reservations[_reservation_id] = reservation(_reservation_id,renter,reserved_place,_parking_block_number,_reservation_time,_pre_financing, _penalty, _reservation_end_time, _ended);
+
+        // TODO : If(cancellation), _charge_cancellation_fee
+        // TODO : If(no_show), _charge_penalty
+    }
+
+    function _charge_cancellation_fee() internal {} // NOTE : charge cancellation fee with pre_financing
+
+    function _charge_penalty(uint256 _reservation_id, address _renter) internal { // NOTE : charge penalty on no-show
+
+    }
+
+    function create_rental(uint256 _rental_id, uint256 _reservation_id, address _renter, uint256 _parking_space_id, uint256 _parking_block_number, uint256 _rental_start_time, uint256 _rental_end_time, bool _ended) public {
+        require(rentals[_rental_id].id == 0x0); // check rental with same id does not exist
+        // Reservation could either exists.
+        user storage renter = users[_renter];
+        parking_space storage rental_space = parking_spaces[_parking_space_id];
+        rentals[_rental_id] = rental(_rental_id,_reservation_id,renter,rental_space,_parking_block_number,_rental_start_time,_rental_end_time,_ended);
+        // TOOD : When the car starts parking, create rental
+    }
+
+    function payment() public {  
+        
+        // TODO : when rental ends, payment happens
+    }
+
 
 }
