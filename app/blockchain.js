@@ -2,48 +2,62 @@ const Web3 = require('web3')
 const bip39 = require('bip39')
 const hdkey = require('ethereumjs-wallet/hdkey')
 const utils = require('ethereumjs-util')
+const fs =require('fs')
 
 if (typeof web3 != 'undefined') {
-  var web3 = new Web3(Web3.currentProvider)
+  var web3 = new Web3(Web3.currentProvider) // NOTE : using metamask or mist
 } else {
   var web3 = new Web3(new Web3.providers.WebsocketProvider('ws://localhost:8545')) // NOTE : ganache-cli -p 8545 will open up port
+  // TODO : web3 connecting to server node, not local ndoe
 }
 
-// NOTE : make new wallet and account
-var createWallet = function (accountIndex=0) {
+// NOTE : make new wallet and account. return mnemonic and KeyStore
+var createWallet = function (password) {
   return new Promise(function (resolve, reject) {
-    var mnemonic = bip39.generateMnemonic()
+    var mnemonic = bip39.generateMnemonic() // make mnemonic
     var seed = bip39.mnemonicToSeed(mnemonic)
-    var HDKey = hdkey.fromMasterSeed(seed)
-    var path = "m/44'/60'/0'/0/" + accountIndex
-    var defaultAccountHDKey = HDKey.derivePath(path)
-    var defaultAccountPvKey = defaultAccountHDKey._hdkey._privateKey // Buffer
-    var defaultAccountAddress = utils.privateToAddress(defaultAccountPvKey) // Buffer
-    console.log(mnemonic)
-    resolve(mnemonic)
-    // resolve({ethAccountAddress: defaultAccountAddress.toString('hex'),ethAccountPvKey: defaultAccountPvKey.toString('hex')})
+    var HDKey = hdkey.fromMasterSeed(seed) // derive master pvKey
+    var path = "m/44'/60'/0'/0/0";
+    var defaultAccountHDKey = HDKey.derivePath(path) // derive first account 
+    var defaultAccountPvKey = defaultAccountHDKey._hdkey._privateKey.toString('hex') // Buffer -> string
+    var keyStore = web3.eth.accounts.encrypt(defaultAccountPvKey,password);
+    resolve({mnemonic:mnemonic,keyStore:keyStore}); 
   })
 }
 
-// NOTE : return wallet and account
-var loadWallet = function (mnemonic,accountIndex = 0) { // NOTE : wallet from ganache 10 accounts
-  return new Promise(function (resolve, reject) {
-    var seed = bip39.mnemonicToSeed(mnemonic)
-    var HDKey = hdkey.fromMasterSeed(seed)
-    var path = "m/44'/60'/0'/0/" + accountIndex 
-    var accountHDKey = HDKey.derivePath(path)
-    var accountPvKey = defaultAccountHDKey._hdkey._privateKey
-    var accountAddress = utils.privateToAddress(accountPvKey)
-    resolve({ethAccountAddress : accountAddress.toString('hex'), ethAccountPvKey : accountPvKey.toString('hex')})
+// NOTE : sign in as an account
+var importWallet = function(mnemonic,accountIndex=0){
+    return new Promise(function(resolve,reject){
+      var seed = bip39.mnemonicToSeed(mnemonic);
+      var HDKey = hdkey.fromMasterSeed(seed);
+      var path = "m/44'/60'/0'/0/" + accountIndex 
+      var accountHDKey = HDKey.derivePath(path)
+      var accountPvKey = accountHDKey._hdkey._privateKey
+      var accountAddress = utils.privateToAddress(accountPvKey)
+      resolve({ethAccountAddress : accountAddress.toString('hex'), ethAccountPvKey : accountPvKey.toString('hex')})
+    })
+}
+
+// NOTE : sign in as an account
+var importWallet = function(keyStore,password){
+  return new Promise(function(resolve,reject){
+    var wallet = web3.eth.accounts.decrypt(keyStore,password);
+    resolve({ethAccountAddress : wallet.address, ethAccountPvKey : wallet.privateKey})
   })
 }
 
 // NOTE : make new account on local node
-var registration = function () {
-  return new Promise(function (resolve, reject) {
-    var ethAccount = web3.eth.accounts.create()
-    resolve({ethAccountAddress: ethAccount.address,ethAccountPvKey: ethAccount.privateKey})
-  })
+var registration = function (create_or_import,mnemonic={}) {
+  var wallet_creation = {
+    CREATE : 0,
+    IMPORT : 1
+  };
+  if(create_or_import == wallet_creation.CREATE) return createWallet();
+  else return loadWallet(mnemonic);
+  // return new Promise(function (resolve, reject) {  
+  //   var ethAccount = web3.eth.accounts.create()
+  //   resolve({ethAccountAddress: ethAccount.address,ethAccountPvKey: ethAccount.privateKey})
+  // })
 }
 
 // NOTE : encrypt PrivateKey
